@@ -24,42 +24,49 @@ const initialRoommates = [
 
 export default function App() {
   const [showAddRoommate, setShowAddRoommate] = useState(false);
-  const [newRoommate, setNewRoommate] = useState(initialRoommates)
-  const [showExpense, setShowExpense] = useState(null)
-  
+  const [newRoommate, setNewRoommate] = useState(initialRoommates);
+  const [showExpense, setShowExpense] = useState(null);
+
   function addNewRoommate(newRoommate) {
-    setNewRoommate((roommates) => [...roommates, newRoommate])
-    setShowAddRoommate(false)
+    setNewRoommate((roommates) => [...roommates, newRoommate]);
+    setShowAddRoommate(false);
   }
 
-
   function toggleAddExpense(roommate) {
-    setShowExpense((prev) => prev?.id == roommate.id ? null : roommate)
+    setShowExpense((prev) => (prev?.id == roommate.id ? null : roommate));
     console.log(roommate);
-    
   }
   return (
     <>
       <Header />
       <div className="grid grid-cols-2 gap-x-20 pt-10 px-[200px] items-start">
         <div className="flex flex-col gap-y-6">
-              <Roommates roommates={newRoommate} onHandleToggleExpense={toggleAddExpense}/>
-        {showAddRoommate && <AddNewRoommate  onHandleNewRoommate={addNewRoommate}/>}
-        <button
-          onClick={() => setShowAddRoommate((prev) => !prev)}
-          className="self-center border px-5 rounded-[5px] bg-[#487ac8] text-white font-bold border-[#487ac8] hover:bg-[#0043afee] duration-300 w-fit mt-2 cursor-pointer"
-        >
-          {showAddRoommate ? "Close" : "Add Roommate"}
-        </button>
+          <Roommates
+            roommates={newRoommate}
+            onHandleToggleExpense={toggleAddExpense}
+            showExpense={showExpense}
+          />
+          {showAddRoommate && (
+            <AddNewRoommate onHandleNewRoommate={addNewRoommate} />
+          )}
+          <button
+            onClick={() => setShowAddRoommate((prev) => !prev)}
+            className="self-center border px-5 rounded-[5px] bg-[#487ac8] text-white font-bold border-[#487ac8] hover:bg-[#0043afee] duration-300 w-fit mt-2 cursor-pointer"
+          >
+            {showAddRoommate ? "Close" : "Add Roommate"}
+          </button>
         </div>
-        
 
-        {
-          showExpense && <div className="border-[#bdc5d5] border rounded-[10px] p-1.5 px-5 py-2 flex flex-col gap-y-20">
-          <AddExpense showExpense={showExpense}/>
-          <RecentExpenses />
-        </div>
-        }
+        {showExpense && (
+          <div className="border-[#bdc5d5] border rounded-[10px] p-1.5 px-5 py-2 flex flex-col gap-y-20">
+            <AddExpense
+              showExpense={showExpense}
+              setNewRoommate={setNewRoommate}
+              setShowExpense={setShowExpense}
+            />
+            <RecentExpenses newRoommate={newRoommate} />
+          </div>
+        )}
       </div>
     </>
   );
@@ -75,7 +82,7 @@ function Header() {
   );
 }
 
-function Roommates({roommates, onHandleToggleExpense}) {
+function Roommates({ roommates, onHandleToggleExpense, showExpense }) {
   return (
     <>
       <div className="border-[#bdc5d5] border rounded-[10px] p-1.5 w-fit px-5 py-2">
@@ -84,7 +91,12 @@ function Roommates({roommates, onHandleToggleExpense}) {
 
         <div className="py-3 flex flex-col gap-y-3">
           {roommates.map((roommate) => (
-            <Roommate roommate={roommate} key={roommate.id} onHandleToggleExpense={onHandleToggleExpense}/>
+            <Roommate
+              roommate={roommate}
+              key={roommate.id}
+              onHandleToggleExpense={onHandleToggleExpense}
+              showExpense={showExpense}
+            />
           ))}
         </div>
       </div>
@@ -92,7 +104,7 @@ function Roommates({roommates, onHandleToggleExpense}) {
   );
 }
 
-function Roommate({ roommate, onHandleToggleExpense}) {
+function Roommate({ roommate, onHandleToggleExpense, showExpense }) {
   return (
     <>
       <div className="flex gap-x-5 gap-y-3 justify-between items-center hover:bg-[#4879c846] py-2 px-2 rounded-[5px] cursor-pointer">
@@ -117,7 +129,9 @@ function Roommate({ roommate, onHandleToggleExpense}) {
             )}
           </div>
         </div>
-        <Button onSmash={() => onHandleToggleExpense(roommate)}>Select</Button>
+        <Button onSmash={() => onHandleToggleExpense(roommate)}>
+          {showExpense?.id === roommate.id ? "Close" : "Select"}
+        </Button>
       </div>
     </>
   );
@@ -136,7 +150,7 @@ function Button({ children, onSmash }) {
   );
 }
 
-function AddNewRoommate({onHandleNewRoommate}) {
+function AddNewRoommate({ onHandleNewRoommate }) {
   const [roommateName, setRoommateName] = useState("");
   const [image, setImage] = useState("https://i.pravatar.cc/48");
 
@@ -153,7 +167,7 @@ function AddNewRoommate({onHandleNewRoommate}) {
       balance: 0,
     };
     onHandleNewRoommate(newRoommate);
-     setRoommateName("")
+    setRoommateName("");
   }
 
   return (
@@ -193,15 +207,30 @@ function AddNewRoommate({onHandleNewRoommate}) {
   );
 }
 
-function AddExpense({showExpense}) {
-  const [expenseName, setExpenseName] = useState("")
-  const [bill, setBill] = useState("")
+function AddExpense({ showExpense, setNewRoommate, setShowExpense }) {
+  const [expenseName, setExpenseName] = useState("");
+  const [bill, setBill] = useState("");
+  const [paidby, setPaidby] = useState("user");
 
   function handleExpense(e) {
-    e.preventDefault()
+    e.preventDefault();
 
-    console.log(bill, expenseName);
-    
+    if (!bill) return;
+
+    const balance = paidby === "user" ? bill / 2 : -(bill / 2);
+
+    setNewRoommate((prev) =>
+      prev.map((roommate) =>
+        roommate.id === showExpense.id
+          ? { ...roommate, balance: roommate.balance + balance, paidby, bill }
+          : roommate
+      )
+    );
+
+    setBill("");
+    setExpenseName("");
+    setPaidby("user");
+    setShowExpense(null);
   }
   return (
     <>
@@ -212,15 +241,29 @@ function AddExpense({showExpense}) {
         <form onSubmit={handleExpense} className="flex flex-col gap-y-5 mt-5">
           <div className="flex items-center justify-between">
             <label>Expense Name:</label>
-            <input type="text" className="border rounded-[4px]" value={expenseName} onChange={(e) => setExpenseName(e.target.value)}/>
+            <input
+              type="text"
+              className="border rounded-[4px]"
+              value={expenseName}
+              onChange={(e) => setExpenseName(e.target.value)}
+            />
           </div>
           <div className="flex items-center justify-between">
             <label>Total Amount:</label>
-            <input value={bill} onChange={(e) => setBill(Number(e.target.value))} type="number" className="border rounded-[4px]" />
+            <input
+              value={bill}
+              onChange={(e) => setBill(Number(e.target.value))}
+              type="number"
+              className="border rounded-[4px]"
+            />
           </div>
           <div className="flex items-center justify-between">
             <label>Paid by:</label>
-            <select className="border rounded-[4px]">
+            <select
+              className="border rounded-[4px]"
+              value={paidby}
+              onChange={(e) => setPaidby(e.target.value)}
+            >
               <option value="user">You</option>
               <option value="roommate">{showExpense.name}</option>
             </select>
@@ -228,8 +271,11 @@ function AddExpense({showExpense}) {
           <div className="flex items-center justify-between font-bold">
             <label>With Roommate:</label>
 
-            <input className="border rounded-[4px]" value={showExpense.name} disabled/>
-            
+            <input
+              className="border rounded-[4px]"
+              value={showExpense.name}
+              disabled
+            />
           </div>
           <Button>Add Expense</Button>
         </form>
@@ -238,15 +284,27 @@ function AddExpense({showExpense}) {
   );
 }
 
-function RecentExpenses() {
+function RecentExpenses({ newRoommate }) {
   return (
     <>
       <div>
         <h1 className="font-bold">Recent Expenses</h1>
         <hr className="my-2" />
         <ul className="list-disc mt-4">
-          <li>You paid x with x$</li>
-          <hr className="my-3 text-gray-300" />
+          {newRoommate.map(
+            (roommate) =>
+              roommate.bill && (
+                <>
+                  {" "}
+                  <li>
+                    {roommate.paidby === "user" ? "You" : roommate.name} paid $
+                    {roommate.bill} with{" "}
+                    {roommate.paidby === "user" ? roommate.name : "you"}
+                  </li>
+                  <hr className="my-3 text-gray-300" />
+                </>
+              )
+          )}
         </ul>
       </div>
     </>
